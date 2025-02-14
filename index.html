@@ -109,23 +109,19 @@
         
         <div class="input-section">
             <div class="input-group">
-                <label>Monthly Salary </label>
+                <label>Monthly Salary</label>
                 <input type="text" id="monthlySalary" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>APIT/PAYE Deducted </label>
-                <input type="text" id="apit" class="formatted-input">
-            </div>
-            <div class="input-group">
-                <label>Annual Interest Income </label>
+                <label>Annual Interest Income</label>
                 <input type="text" id="interest" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>Annual Investment Income </label>
+                <label>Annual Investment Income</label>
                 <input type="text" id="investment" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>Qualifying Payments </label>
+                <label>Qualifying Payments</label>
                 <input type="text" id="qualifying" class="formatted-input">
             </div>
             <div style="width: 100%; text-align: center;">
@@ -169,6 +165,7 @@
             maximumFractionDigits: 2
         });
 
+        // Input formatting
         document.querySelectorAll('.formatted-input').forEach(input => {
             input.addEventListener('blur', function() {
                 const value = parseFloat(this.value.replace(/,/g, ''));
@@ -191,24 +188,39 @@
             return parseFloat(value.replace(/,/g, '')) || 0;
         }
 
+        function calculateAPIT(annualSalary) {
+            const taxableIncome = Math.max(annualSalary - 1200000, 0);
+            const taxBrackets = [
+                {limit: 500000, rate: 0.06},
+                {limit: 500000, rate: 0.12},
+                {limit: 500000, rate: 0.18},
+                {limit: 500000, rate: 0.24},
+                {limit: 500000, rate: 0.30},
+                {limit: Infinity, rate: 0.36}
+            ];
+            return calculateTaxBrackets(taxableIncome, taxBrackets).totalTax;
+        }
+
         function calculateTax() {
             const inputs = {
                 monthlySalary: parseInput(document.getElementById('monthlySalary').value),
-                apit: parseInput(document.getElementById('apit').value),
                 interest: parseInput(document.getElementById('interest').value),
                 investment: parseInput(document.getElementById('investment').value),
                 qualifying: parseInput(document.getElementById('qualifying').value)
             };
 
-            const oldMethod = calculateOldMethod(inputs);
-            const newMethod = calculateNewMethod(inputs);
+            const annualSalary = inputs.monthlySalary * 12;
+            const apit = calculateAPIT(annualSalary);
+
+            const oldMethod = calculateOldMethod(inputs, apit);
+            const newMethod = calculateNewMethod(inputs, apit);
             
             displayResults(oldMethod, 'oldMethodResults', 1200000);
             displayResults(newMethod, 'newMethodResults', 1800000);
             showTaxBenefit(oldMethod.balancePayable, newMethod.balancePayable);
         }
 
-        function calculateOldMethod(inputs) {
+        function calculateOldMethod(inputs, apit) {
             const annualSalary = inputs.monthlySalary * 12;
             const totalAssessable = annualSalary + inputs.interest + inputs.investment;
             const taxableIncome = Math.max(totalAssessable - 1200000 - inputs.qualifying, 0);
@@ -224,7 +236,7 @@
             
             const taxCalculation = calculateTaxBrackets(taxableIncome, taxBrackets);
             const whtInterest = inputs.interest * 0.05;
-            const totalCredits = inputs.apit + whtInterest;
+            const totalCredits = apit + whtInterest;
             const balancePayable = Math.max(taxCalculation.totalTax - totalCredits, 0);
 
             return {
@@ -233,16 +245,16 @@
                 totalAssessable,
                 taxableIncome,
                 whtInterest,
+                apit,
                 totalCredits,
                 balancePayable,
                 qualifying: inputs.qualifying,
                 interest: inputs.interest,
-                investment: inputs.investment,
-                apit: inputs.apit
+                investment: inputs.investment
             };
         }
 
-        function calculateNewMethod(inputs) {
+        function calculateNewMethod(inputs, apit) {
             const annualSalary = inputs.monthlySalary * 12;
             const totalAssessable = annualSalary + inputs.interest + inputs.investment;
             const taxableIncome = Math.max(totalAssessable - 1800000 - inputs.qualifying, 0);
@@ -257,7 +269,7 @@
             
             const taxCalculation = calculateTaxBrackets(taxableIncome, taxBrackets);
             const whtInterest = inputs.interest * 0.05;
-            const totalCredits = inputs.apit + whtInterest;
+            const totalCredits = apit + whtInterest;
             const balancePayable = Math.max(taxCalculation.totalTax - totalCredits, 0);
 
             return {
@@ -266,12 +278,12 @@
                 totalAssessable,
                 taxableIncome,
                 whtInterest,
+                apit,
                 totalCredits,
                 balancePayable,
                 qualifying: inputs.qualifying,
                 interest: inputs.interest,
-                investment: inputs.investment,
-                apit: inputs.apit
+                investment: inputs.investment
             };
         }
 
@@ -361,13 +373,14 @@
             const format = document.getElementById('exportFormat').value;
             const inputs = {
                 monthlySalary: parseInput(document.getElementById('monthlySalary').value),
-                apit: parseInput(document.getElementById('apit').value),
                 interest: parseInput(document.getElementById('interest').value),
                 investment: parseInput(document.getElementById('investment').value),
                 qualifying: parseInput(document.getElementById('qualifying').value)
             };
 
-            const results = method === 'old' ? calculateOldMethod(inputs) : calculateNewMethod(inputs);
+            const annualSalary = inputs.monthlySalary * 12;
+            const apit = calculateAPIT(annualSalary);
+            const results = method === 'old' ? calculateOldMethod(inputs, apit) : calculateNewMethod(inputs, apit);
             const reliefAmount = method === 'old' ? 1200000 : 1800000;
 
             const csvContent = [
