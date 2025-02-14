@@ -109,23 +109,23 @@
         
         <div class="input-section">
             <div class="input-group">
-                <label>Monthly Salary (LKR)</label>
+                <label>Monthly Salary </label>
                 <input type="text" id="monthlySalary" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>APIT/PAYE Deducted (LKR)</label>
+                <label>APIT/PAYE Deducted </label>
                 <input type="text" id="apit" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>Interest Income (LKR)</label>
+                <label>Annual Interest Income </label>
                 <input type="text" id="interest" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>Investment Income (LKR)</label>
+                <label>Annual Investment Income </label>
                 <input type="text" id="investment" class="formatted-input">
             </div>
             <div class="input-group">
-                <label>Qualifying Payments (LKR)</label>
+                <label>Qualifying Payments </label>
                 <input type="text" id="qualifying" class="formatted-input">
             </div>
             <div style="width: 100%; text-align: center;">
@@ -169,7 +169,6 @@
             maximumFractionDigits: 2
         });
 
-        // Input formatting
         document.querySelectorAll('.formatted-input').forEach(input => {
             input.addEventListener('blur', function() {
                 const value = parseFloat(this.value.replace(/,/g, ''));
@@ -287,7 +286,7 @@
                 totalTax += tax;
                 
                 breakdown.push({
-                    limit: bracket.limit === Infinity ? 'Balance' : formatter.format(bracket.limit),
+                    amount: formatter.format(taxable),
                     rate: `${(bracket.rate * 100)}%`,
                     tax: formatter.format(tax)
                 });
@@ -303,8 +302,8 @@
             const html = `
                 <div class="calculation-result">
                     <p>Annual Salary: ${formatter.format(results.annualSalary)}</p>
-                    <p>Interest Income: ${formatter.format(results.interest)}</p>
-                    <p>Investment Income: ${formatter.format(results.investment)}</p>
+                    <p>Annual Interest Income: ${formatter.format(results.interest)}</p>
+                    <p>Annual Investment Income: ${formatter.format(results.investment)}</p>
                     <p class="bold">Total Assessable Income: ${formatter.format(results.totalAssessable)}</p>
                     
                     <div class="deduction">(-) Personal Relief: (${formatter.format(reliefAmount)})</div>
@@ -322,7 +321,7 @@
                         <tbody>
                             ${results.breakdown.map(row => `
                                 <tr>
-                                    <td>${row.limit}</td>
+                                    <td>${row.amount}</td>
                                     <td>${row.rate}</td>
                                     <td>${row.tax}</td>
                                 </tr>
@@ -372,20 +371,20 @@
             const reliefAmount = method === 'old' ? 1200000 : 1800000;
 
             const csvContent = [
-                `Annual Salary: ${formatter.format(results.annualSalary)}`,
-                `Interest Income: ${formatter.format(results.interest)}`,
-                `Investment Income: ${formatter.format(results.investment)}`,
-                `Total Assessable Income: ${formatter.format(results.totalAssessable)}`,
-                `(-) Personal Relief: (${formatter.format(reliefAmount)})`,
-                `(-) Qualifying Payments: (${formatter.format(results.qualifying)})`,
-                `Taxable Income: ${formatter.format(results.taxableIncome)}`,
-                '\nTaxable Amount,Rate,Tax',
-                ...results.breakdown.map(row => `${row.limit},${row.rate},${row.tax}`),
-                `\nIncome Tax on Taxable Income: ${formatter.format(results.totalTax)}`,
-                `(-) WHT on Interest: (${formatter.format(results.whtInterest)})`,
-                `(-) APIT/PAYE: (${formatter.format(results.apit)})`,
-                `Total Tax Credits: ${formatter.format(results.totalCredits)}`,
-                `Balance Tax Payable: ${formatter.format(results.balancePayable)}`
+                `Annual Salary,${formatter.format(results.annualSalary)}`,
+                `Annual Interest Income,${formatter.format(results.interest)}`,
+                `Annual Investment Income,${formatter.format(results.investment)}`,
+                `Total Assessable Income,${formatter.format(results.totalAssessable)}`,
+                `Personal Relief Deduction,${formatter.format(reliefAmount)}`,
+                `Qualifying Payments Deduction,${formatter.format(results.qualifying)}`,
+                `Taxable Income,${formatter.format(results.taxableIncome)}`,
+                `\nTaxable Amount,Rate,Tax`,
+                ...results.breakdown.map(row => `${row.amount},${row.rate},${row.tax}`),
+                `\nIncome Tax on Taxable Income,${formatter.format(results.totalTax)}`,
+                `WHT on Interest Deduction,${formatter.format(results.whtInterest)}`,
+                `APIT/PAYE Deduction,${formatter.format(results.apit)}`,
+                `Total Tax Credits,${formatter.format(results.totalCredits)}`,
+                `Balance Tax Payable,${formatter.format(results.balancePayable)}`
             ].join('\n');
 
             if (format === 'csv') {
