@@ -188,16 +188,25 @@
             return parseFloat(value.replace(/,/g, '')) || 0;
         }
 
-        function calculateAPIT(annualSalary) {
-            const taxableIncome = Math.max(annualSalary - 1200000, 0);
-            const taxBrackets = [
+        function calculateAPIT(annualSalary, method) {
+            const relief = method === 'old' ? 1200000 : 1800000;
+            const taxableIncome = Math.max(annualSalary - relief, 0);
+            
+            const taxBrackets = method === 'old' ? [
                 {limit: 500000, rate: 0.06},
                 {limit: 500000, rate: 0.12},
                 {limit: 500000, rate: 0.18},
                 {limit: 500000, rate: 0.24},
                 {limit: 500000, rate: 0.30},
                 {limit: Infinity, rate: 0.36}
+            ] : [
+                {limit: 1000000, rate: 0.06},
+                {limit: 500000, rate: 0.18},
+                {limit: 500000, rate: 0.24},
+                {limit: 500000, rate: 0.30},
+                {limit: Infinity, rate: 0.36}
             ];
+            
             return calculateTaxBrackets(taxableIncome, taxBrackets).totalTax;
         }
 
@@ -210,14 +219,15 @@
             };
 
             const annualSalary = inputs.monthlySalary * 12;
-            const apit = calculateAPIT(annualSalary);
+            const oldAPIT = calculateAPIT(annualSalary, 'old');
+            const newAPIT = calculateAPIT(annualSalary, 'new');
 
-            const oldMethod = calculateOldMethod(inputs, apit);
-            const newMethod = calculateNewMethod(inputs, apit);
+            const oldMethod = calculateOldMethod(inputs, oldAPIT);
+            const newMethod = calculateNewMethod(inputs, newAPIT);
             
             displayResults(oldMethod, 'oldMethodResults', 1200000);
             displayResults(newMethod, 'newMethodResults', 1800000);
-            showTaxBenefit(oldMethod.balancePayable, newMethod.balancePayable);
+            showTaxBenefit(oldMethod.totalTax, newMethod.totalTax);
         }
 
         function calculateOldMethod(inputs, apit) {
@@ -341,7 +351,7 @@
                         </tbody>
                     </table>
                     
-                    <p class="bold" style="color: #2196F3;">
+                    <p class="bold" style="color: #FF0000;">
                         Income Tax on Taxable Income: ${formatter.format(results.totalTax)}
                     </p>
                     <div class="deduction">(-) WHT on Interest: (${formatter.format(results.whtInterest)})</div>
@@ -355,12 +365,11 @@
             document.getElementById(elementId).innerHTML = html;
         }
 
-        function showTaxBenefit(oldBalance, newBalance) {
-            const benefit = oldBalance - newBalance;
-            const percentage = (benefit / oldBalance * 100).toFixed(1);
-            
+        function showTaxBenefit(oldTax, newTax) {
+            const benefit = newTax - oldTax;
+            const percentage = ((benefit / oldTax) * 100).toFixed(1);
             const benefitHtml = `
-                Tax Savings from New System: 
+                Tax Saving with new tax rates: 
                 <span style="color: #4CAF50;">
                     ${formatter.format(benefit)} (${percentage}%)
                 </span>
@@ -379,7 +388,7 @@
             };
 
             const annualSalary = inputs.monthlySalary * 12;
-            const apit = calculateAPIT(annualSalary);
+            const apit = calculateAPIT(annualSalary, method);
             const results = method === 'old' ? calculateOldMethod(inputs, apit) : calculateNewMethod(inputs, apit);
             const reliefAmount = method === 'old' ? 1200000 : 1800000;
 
